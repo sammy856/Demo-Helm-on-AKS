@@ -1,0 +1,9 @@
+replicaCount: 2
+name: dev-axion-telemetry-deployment 
+appName: dev-axion-telemetry-query-service
+imageLink: nginx
+port: 8000
+serviceName: dev-telemetry-query  
+typeOfService: ClusterIP
+servicePort: 80
+targetPort: 8000

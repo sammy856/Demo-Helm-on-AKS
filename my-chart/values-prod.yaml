@@ -1,0 +1,9 @@
+replicaCount: 5
+name: prod-axion-telemetry-deployment 
+appName: prod-axion-telemetry-query-service
+imageLink: nginx:v
+port: 9000
+serviceName: prod-telemetry-query  
+typeOfService: ClusterIP
+servicePort: 90
+targetPort: 9000
