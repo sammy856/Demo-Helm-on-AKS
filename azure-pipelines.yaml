@@ -9,7 +9,7 @@ pool:
 variables:
   azureServiceConnection: 'my-azure-service-connection'
   resourceGroupName: 'my-resource-group'
-  aksClusterName: 'my-aks'
+  aksClusterName: 'sammy-aks'
   namespace: 'dev'
   releaseName: 'telemetry-query'
   chartPath: './my-chart'
