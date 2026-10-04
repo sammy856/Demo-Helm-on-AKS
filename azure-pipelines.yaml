@@ -40,9 +40,12 @@ stages:
     - task: HelmDeploy@0
       displayName: 'Helm Lint'
       inputs:
-        connectionType: 'None'
+        connectionType: 'Azure Resource Manager'
+        azureSubscription: 'my-azure-service-connection'
+        azureResourceGroup: 'sammy-rg'
+        kubernetesCluster: 'sammy-aks'
+        namespace: 'dev'
         command: 'lint'
-        chartPath: '$(chartPath)'
         arguments: '-f $(valuesFile)'
 
     - task: HelmDeploy@0
