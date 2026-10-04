@@ -1,0 +1,128 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  azureServiceConnection: 'my-azure-service-connection'
+  resourceGroupName: 'my-resource-group'
+  aksClusterName: 'my-aks'
+  namespace: 'dev'
+  releaseName: 'telemetry-query'
+  chartPath: './my-chart'
+  valuesFile: './my-chart/values-dev.yaml'
+
+stages:
+
+# =====================================================
+# Stage 1 - Helm Validation
+# =====================================================
+
+- stage: Helm_Validation
+  displayName: 'Helm Validation'
+
+  jobs:
+  - job: Validate
+    displayName: 'Lint and Template Helm Chart'
+
+    steps:
+
+    - checkout: self
+
+    - task: HelmInstaller@1
+      displayName: 'Install Helm'
+      inputs:
+        helmVersionToInstall: 'latest'
+
+    - task: HelmDeploy@0
+      displayName: 'Helm Lint'
+      inputs:
+        connectionType: 'None'
+        command: 'lint'
+        chartPath: '$(chartPath)'
+        arguments: '-f $(valuesFile)'
+
+    - task: HelmDeploy@0
+      displayName: 'Helm Template'
+      inputs:
+        connectionType: 'None'
+        command: 'template'
+        chartPath: '$(chartPath)'
+        arguments: '-f $(valuesFile)'
+
+
+# =====================================================
+# Stage 2 - Deploy to AKS
+# =====================================================
+
+- stage: Deploy_Dev
+  displayName: 'Deploy to AKS Dev'
+  dependsOn: Helm_Validation
+  condition: succeeded()
+
+  jobs:
+  - deployment: Deploy
+    displayName: 'Deploy Helm Chart to AKS'
+
+    environment: 'aks-dev'
+
+    strategy:
+      runOnce:
+
+        deploy:
+          steps:
+
+          - checkout: self
+
+          - task: AzureCLI@2
+            displayName: 'Deploy Helm Chart to AKS'
+            inputs:
+              azureSubscription: '$(azureServiceConnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+
+              inlineScript: |
+
+                echo "Getting AKS credentials..."
+
+                az aks get-credentials \
+                  --resource-group $(resourceGroupName) \
+                  --name $(aksClusterName) \
+                  --overwrite-existing
+
+                echo "Checking AKS nodes..."
+
+                kubectl get nodes
+
+                echo "Checking namespace..."
+
+                kubectl get namespace $(namespace) \
+                  || kubectl create namespace $(namespace)
+
+                echo "Installing / Upgrading Helm release..."
+
+                helm upgrade --install $(releaseName) $(chartPath) \
+                  --namespace $(namespace) \
+                  --create-namespace \
+                  --values $(valuesFile) \
+                  --wait \
+                  --timeout 5m
+
+                echo "Helm release..."
+
+                helm list -n $(namespace)
+
+                echo "Deployments..."
+
+                kubectl get deployment -n $(namespace)
+
+                echo "Pods..."
+
+                kubectl get pods -n $(namespace)
+
+                echo "Services..."
+
+                kubectl get svc -n $(namespace)
