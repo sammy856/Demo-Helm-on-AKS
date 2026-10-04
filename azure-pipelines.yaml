@@ -8,7 +8,7 @@ pool:
 
 variables:
   azureServiceConnection: 'my-azure-service-connection'
-  resourceGroupName: 'my-resource-group'
+  resourceGroupName: 'sammy-rg'
   aksClusterName: 'sammy-aks'
   namespace: 'dev'
   releaseName: 'telemetry-query'
@@ -67,6 +67,11 @@ stages:
   - deployment: Deploy
     displayName: 'Deploy Helm Chart to AKS'
 
+
+
+
+
+
     environment: 'aks-dev'
 
     strategy:
@@ -77,12 +82,25 @@ stages:
 
           - checkout: self
 
+          - task: HelmDeploy@1
+            inputs:
+              connectionType: 'Azure Resource Manager'
+              azureSubscription: 'Azure subscription 1(2f74afae-83ae-42b9-aa41-7a2bb50dc155)'
+              azureResourceGroup: 'sammy-rg'
+              kubernetesCluster: 'sammy-aks'
+              namespace: 'dev'
+              command: 'ls'
+
+
+
+
           - task: AzureCLI@2
             displayName: 'Deploy Helm Chart to AKS'
             inputs:
               azureSubscription: '$(azureServiceConnection)'
               scriptType: 'bash'
               scriptLocation: 'inlineScript'
+            
 
               inlineScript: |
 
